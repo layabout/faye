@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--/*  获取数据字典  */-->
+<moboAccount messageType="34001002">
+    <reqData>
+        <dictTypeID th:text="${dictTypeId}">33333</dictTypeID>
+    </reqData>
+</moboAccount>

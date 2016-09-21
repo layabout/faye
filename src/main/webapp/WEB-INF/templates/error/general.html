@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error page</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<h1>General Error Page.</h1>
+<hr>
+<th:block th:if="${errorMessage != null}">
+    <p th:text="${errorMessage}">error msg</p>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<configuration scan="true" scanPeriod="60 seconds" debug="true">
+    <!-- http://logback.qos.ch/translator/ -->
+    <!-- existing log4j users can convert the log4j.properties files to logback.xml with translator online tool -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="logfile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>/usr/local/tomcat/log/mobao_portal.log</File>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/usr/local/tomcat/log/mobao_portal.log.%d{.yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
+    <logger name="org.springframework" level="info" />
+    <logger name="org.thymeleaf" level="info" />
+    <logger name="com.ruby.common" level="debug" />
+    <logger name="com.ruby.wechat" level="trace" />
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="logfile" />
+    </root>
+</configuration>
