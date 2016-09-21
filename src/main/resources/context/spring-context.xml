@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:task="http://www.springframework.org/schema/task"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
 
     <!-- Provide ClassLoaderTemplateResolver To TemplateEngine -->
     <bean id="classLoaderTemplateResolver" class="org.thymeleaf.templateresolver.ClassLoaderTemplateResolver">
@@ -14,5 +14,11 @@
     <bean id="xmlTemplateEngine" class="org.thymeleaf.TemplateEngine">
         <property name="templateResolver" ref="classLoaderTemplateResolver" />
     </bean>
+
+    <!-- Spring Task -->
+    <task:annotation-driven scheduler="scheduler" mode="proxy"/>
+
+    <task:scheduler id="scheduler" pool-size="10" />
+
 
 </beans>
