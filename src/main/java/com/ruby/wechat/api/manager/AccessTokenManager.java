@@ -10,6 +10,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +22,23 @@ import java.util.Map;
  * Email:liyufeng_23@163.com
  */
 @Component
+@Lazy(false)
 public class AccessTokenManager {
 
     private static final Logger logger = LoggerFactory.getLogger(AccessTokenManager.class);
 
-    public static String ACCESS_TOKEN = null;
+    private static String ACCESS_TOKEN = null;
+
+    public static String getAccessToken() {
+        if (ACCESS_TOKEN == null) {
+            flushAccessToken();
+        }
+        return ACCESS_TOKEN;
+    }
+
+    public static void setAccessToken(String accessToken) {
+        ACCESS_TOKEN = accessToken;
+    }
 
     /**
      * 向微服务器请求accessToken
@@ -58,23 +71,52 @@ public class AccessTokenManager {
 
     /**
      * 目前公众号accessToken的有效期是2小时
-     * 所以每隔1小时自动获取一次新的accessToken
+     * 所以每隔1小时就自动获取一次新的accessToken
      * 缓存到本地
      */
-    @Scheduled(cron="0 */1 * * * ?")
+    @Scheduled(cron="0 0 0/1 * * ?")
     public void task() {
         logger.info("获取微信accessToken");
         String result = askAccessToken(Constants.WX_APPID, Constants.WX_APPSECRET);
         ObjectMapper mapper = new ObjectMapper();
         try {
             Map<String,String> map = mapper.readValue(result, new TypeReference<Map<String,String>>() { });
-            ACCESS_TOKEN = map.get("access_token");
+            setAccessToken(map.get("access_token"));
+        } catch (IOException e) {
+            logger.error("解析accessToken错误！");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 被动刷新方法
+     */
+    public static void flushAccessToken() {
+        AccessTokenManager accessTokenManager = new AccessTokenManager();
+        accessTokenManager.task();
+    }
+
+    public static void getWeChatServerIPList() {
+        CloseableHttpClient client = HttpClients.createDefault();
+
+        String requestUrl = "https://api.weixin.qq.com/cgi-bin/getcallbackip?access_token=" + getAccessToken();
+        HttpGet get = new HttpGet(requestUrl);
+
+        try {
+
+            CloseableHttpResponse response = client.execute(get);
+            String bodyAsString = EntityUtils.toString(response.getEntity());
+
+            System.out.println(bodyAsString);
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public static void main(String[] args) {
-
+        getWeChatServerIPList();
     }
+
 }

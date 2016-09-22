@@ -16,9 +16,10 @@
     </bean>
 
     <!-- Spring Task -->
-    <task:annotation-driven scheduler="scheduler" mode="proxy"/>
+    <task:annotation-driven scheduler="taskScheduler" mode="proxy"/>
 
-    <task:scheduler id="scheduler" pool-size="10" />
+    <task:scheduler id="taskScheduler" pool-size="10"/>
+
 
 
 </beans>
