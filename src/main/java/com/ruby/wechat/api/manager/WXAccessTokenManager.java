@@ -23,9 +23,9 @@ import java.util.Map;
  */
 @Component
 @Lazy(false)
-public class AccessTokenManager {
+public class WXAccessTokenManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(AccessTokenManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(WXAccessTokenManager.class);
 
     private static String ACCESS_TOKEN = null;
 
@@ -92,31 +92,10 @@ public class AccessTokenManager {
      * 被动刷新方法
      */
     public static void flushAccessToken() {
-        AccessTokenManager accessTokenManager = new AccessTokenManager();
+        WXAccessTokenManager accessTokenManager = new WXAccessTokenManager();
         accessTokenManager.task();
     }
 
-    public static void getWeChatServerIPList() {
-        CloseableHttpClient client = HttpClients.createDefault();
 
-        String requestUrl = "https://api.weixin.qq.com/cgi-bin/getcallbackip?access_token=" + getAccessToken();
-        HttpGet get = new HttpGet(requestUrl);
-
-        try {
-
-            CloseableHttpResponse response = client.execute(get);
-            String bodyAsString = EntityUtils.toString(response.getEntity());
-
-            System.out.println(bodyAsString);
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void main(String[] args) {
-        getWeChatServerIPList();
-    }
 
 }
