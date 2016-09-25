@@ -1,6 +1,8 @@
 package com.ruby.wechat.api;
 
+import com.google.common.base.Throwables;
 import com.ruby.wechat.Constants;
+import com.ruby.wechat.api.dto.RestApiError;
 import com.ruby.wechat.api.dto.WXTextMessage;
 import com.ruby.wechat.api.manager.WXMessageManager;
 import com.ruby.wechat.utils.*;
@@ -109,6 +111,42 @@ public class WXServiceAPI {
             }
         }
         return null;
+    }
+
+    @RequestMapping(value = "/api/test", method = RequestMethod.GET)
+    public WXTextMessage test() {
+        WXTextMessage textMessage = new WXTextMessage();
+
+        textMessage.setToUserName("toUser");
+        textMessage.setFromUserName("fromUser");
+        textMessage.setCreateTime("1112312312");
+        textMessage.setMsgId("123");
+        textMessage.setMsgType("text");
+        textMessage.setContent("test content");
+
+        return textMessage;
+    }
+
+    /**
+     * Restful 接口统一异常处理
+     * @param request
+     * @param exception
+     * @return
+     */
+    @ExceptionHandler(RuntimeException.class)
+    public RestApiError<String> runtimeExceptionHandler(HttpServletRequest request, RuntimeException exception) {
+
+        RestApiError<String> err = new RestApiError<String>();
+        err.setMessage(exception.getMessage());
+        err.setCode(err.ERROR);
+        err.setData("test data");
+        err.setUrl(request.getRequestURL().toString());
+
+        Throwable rootCause = Throwables.getRootCause(exception);
+
+        logger.error(rootCause.toString(), exception);
+
+        return err;
     }
 
 }
