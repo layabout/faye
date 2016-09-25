@@ -133,8 +133,8 @@ public class WXServiceAPI {
      * @param exception
      * @return
      */
-    @ExceptionHandler(RuntimeException.class)
-    public RestApiError<String> runtimeExceptionHandler(HttpServletRequest request, RuntimeException exception) {
+    @ExceptionHandler(Exception.class)
+    public RestApiError<String> runtimeExceptionHandler(HttpServletRequest request, Exception exception) {
 
         RestApiError<String> err = new RestApiError<String>();
         err.setMessage(exception.getMessage());
