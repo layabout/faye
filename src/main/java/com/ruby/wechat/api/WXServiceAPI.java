@@ -3,7 +3,9 @@ package com.ruby.wechat.api;
 import com.google.common.base.Throwables;
 import com.ruby.wechat.Constants;
 import com.ruby.wechat.api.dto.RestApiError;
-import com.ruby.wechat.api.service.WXBusinessProcessService;
+import com.ruby.wechat.api.dto.WXReceiveTextMessage;
+import com.ruby.wechat.api.dto.WXReplyTextMessage;
+import com.ruby.wechat.api.service.WXReplyMessageService;
 import com.ruby.wechat.utils.AesException;
 import com.ruby.wechat.utils.SHA1;
 import com.ruby.wechat.utils.WXBizMsgCrypt;
@@ -26,7 +28,33 @@ public class WXServiceAPI {
     private static final Logger logger = LoggerFactory.getLogger(WXServiceAPI.class);
 
     @Autowired
-    private WXBusinessProcessService wxBusinessProcessService;
+    private WXReplyMessageService wxReplyMessageService;
+
+
+    //文本消息
+    private static final String TEXT = "text";
+
+    //图片消息
+    private static final String IMAGE = "image";
+
+    //语音消息
+    private static final String VOICE = "voice";
+
+    //视频消息
+    private static final String VIDEO = "video";
+
+    //小视频消息
+    private static final String SHORT_VIDEO = "shortvideo";
+
+    //地理位置消息
+    private static final String LOCATION = "location";
+
+    //链接消息
+    private static final String LINK = "link";
+
+
+    //事件推送
+    private static final String EVENT = "event";
 
     /**
      * 服务器地址验证
@@ -74,12 +102,17 @@ public class WXServiceAPI {
     public String service(@RequestBody String requestBody, @RequestParam(value = "timestamp") String timestamp,
                           @RequestParam(value = "nonce") String nonce, HttpServletRequest request) {
 
-        String transMode = request.getParameter("encrypt_type");
-        if (StringUtils.isBlank(transMode) || transMode.equals("raw")) {
+        String encryptType = request.getParameter("encrypt_type");
+        if (StringUtils.isBlank(encryptType) || encryptType.equals("raw")) {
+
+            //明文模式暂不处理
             logger.trace("明文模式");
-            return null;
+            return "success";
+
         } else {
+
             logger.trace("密文模式");
+
             try {
                 logger.trace("原始密文: {}", requestBody);
 
@@ -92,14 +125,37 @@ public class WXServiceAPI {
 
                 logger.trace("明文消息: {}", decryptXml);
 
-                return wxBusinessProcessService.replyEncryptedMessage(decryptXml);
+                //获取消息类型
+                String msgType = WXUtil.getTagValue(decryptXml, "MsgType");
+
+                if (msgType.equals(TEXT)) {
+
+                    logger.trace("接收文本消息");
+
+                    WXReceiveTextMessage message = WXUtil.convertToBean(decryptXml, WXReceiveTextMessage.class);
+
+                    if (message.getContent().contains("你好")) {
+
+                        WXReplyTextMessage reply = new WXReplyTextMessage();
+                        reply.setToUserName(message.getFromUserName());
+                        reply.setFromUserName(message.getToUserName());
+                        reply.setContent("您好!欢迎关注Mo宝!");
+
+                        return wxReplyMessageService.replyTextMessage(reply);
+                    }
+
+                } else if(msgType.equals(EVENT)) {
+
+                    logger.trace("接收事件推送");
+
+                }
 
             } catch (Exception e) {
                 logger.error("消息解密错误！");
-                e.printStackTrace();
+                return "failure";
             }
         }
-        return null;
+        return "success";
     }
 
     /**
@@ -109,7 +165,7 @@ public class WXServiceAPI {
      * @return
      */
     @ExceptionHandler(Exception.class)
-    public RestApiError<String> runtimeExceptionHandler(HttpServletRequest request, Exception exception) {
+    public RestApiError<String> ExceptionHandler(HttpServletRequest request, Exception exception) {
 
         RestApiError<String> err = new RestApiError<String>();
         err.setMessage(exception.getMessage());
