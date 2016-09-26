@@ -3,12 +3,15 @@ package com.ruby.wechat.api;
 import com.google.common.base.Throwables;
 import com.ruby.wechat.Constants;
 import com.ruby.wechat.api.dto.RestApiError;
-import com.ruby.wechat.api.dto.WXTextMessage;
-import com.ruby.wechat.api.manager.WXMessageManager;
-import com.ruby.wechat.utils.*;
+import com.ruby.wechat.api.service.WXBusinessProcessService;
+import com.ruby.wechat.utils.AesException;
+import com.ruby.wechat.utils.SHA1;
+import com.ruby.wechat.utils.WXBizMsgCrypt;
+import com.ruby.wechat.utils.WXUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -21,6 +24,9 @@ import javax.servlet.http.HttpServletRequest;
 public class WXServiceAPI {
 
     private static final Logger logger = LoggerFactory.getLogger(WXServiceAPI.class);
+
+    @Autowired
+    private WXBusinessProcessService wxBusinessProcessService;
 
     /**
      * 服务器地址验证
@@ -86,24 +92,7 @@ public class WXServiceAPI {
 
                 logger.trace("明文消息: {}", decryptXml);
 
-                String msgType = WXUtil.getTagValue(decryptXml,"MsgType");
-
-                if(msgType.equals(WXMessageType.TEXT_MESSAGE.toString()) ) {
-                    logger.trace("消息类型是: 普通文本消息");
-                    WXTextMessage textMessage = WXUtil.convertXmlToBean(decryptXml, WXTextMessage.class);
-
-                    String replayMsg = "";
-                    if(textMessage.getContent().contains("你好")) {
-                        replayMsg = WXMessageManager.replayTextMessage(textMessage.getFromUserName(), textMessage.getToUserName(), "好锤子！");
-                    } else {
-                        replayMsg = WXMessageManager.replayTextMessage(textMessage.getFromUserName(), textMessage.getToUserName(), "您好！我暂时还不能回答您的问题哦，请拨打客服电话400-677-1357");
-                    }
-
-                    return replayMsg;
-                } else {
-                    //暂不处理除文本消息外的其它消息类型
-                    return null;
-                }
+                return wxBusinessProcessService.replyEncryptedMessage(decryptXml);
 
             } catch (Exception e) {
                 logger.error("消息解密错误！");
@@ -113,22 +102,8 @@ public class WXServiceAPI {
         return null;
     }
 
-    @RequestMapping(value = "/api/test", method = RequestMethod.GET)
-    public WXTextMessage test() {
-        WXTextMessage textMessage = new WXTextMessage();
-
-        textMessage.setToUserName("toUser");
-        textMessage.setFromUserName("fromUser");
-        textMessage.setCreateTime("1112312312");
-        textMessage.setMsgId("123");
-        textMessage.setMsgType("text");
-        textMessage.setContent("test content");
-
-        return textMessage;
-    }
-
     /**
-     * Restful 接口统一异常处理
+     * Restful API 统一异常处理
      * @param request
      * @param exception
      * @return

@@ -9,12 +9,11 @@ import javax.xml.bind.annotation.XmlElement;
  * Email:liyufeng_23@163.com
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-public class WXBaseMessage {
+public class WXReceiveBaseMessage {
 
-    //开发者微信号
     @XmlElement(name = "ToUserName")
     private String toUserName;
-    //发送方账号(一个OpenID)
+
     @XmlElement(name = "FromUserName")
     private String fromUserName;
     //消息创建时间
@@ -27,7 +26,7 @@ public class WXBaseMessage {
     @XmlElement(name = "MsgId")
     private String msgId;
 
-    public WXBaseMessage() {
+    public WXReceiveBaseMessage() {
     }
 
     public String getToUserName() {

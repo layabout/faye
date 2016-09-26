@@ -11,12 +11,12 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @XmlRootElement(name = "xml")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class WXTextMessage extends WXBaseMessage {
+public class WXReceiveTextMessage extends WXReceiveBaseMessage {
     //文本消息内容
     @XmlElement(name = "Content")
     private String content;
 
-    public WXTextMessage() {
+    public WXReceiveTextMessage() {
     }
 
     public String getContent() {
