@@ -9,7 +9,7 @@ import javax.xml.bind.annotation.XmlElement;
  * Email:liyufeng_23@163.com
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-public class WXReceiveBaseMessage {
+public class WXMessageBase {
 
     @XmlElement(name = "ToUserName")
     private String toUserName;
@@ -22,11 +22,8 @@ public class WXReceiveBaseMessage {
     //消息类型
     @XmlElement(name = "MsgType")
     private String msgType;
-    //消息id
-    @XmlElement(name = "MsgId")
-    private String msgId;
 
-    public WXReceiveBaseMessage() {
+    public WXMessageBase() {
     }
 
     public String getToUserName() {
@@ -59,13 +56,5 @@ public class WXReceiveBaseMessage {
 
     public void setMsgType(String msgType) {
         this.msgType = msgType;
-    }
-
-    public String getMsgId() {
-        return msgId;
-    }
-
-    public void setMsgId(String msgId) {
-        this.msgId = msgId;
     }
 }

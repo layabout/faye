@@ -1,7 +1,7 @@
 package com.ruby.wechat.utils;
 
 import com.ruby.wechat.Constants;
-import com.ruby.wechat.api.dto.WXReceiveTextMessage;
+import com.ruby.wechat.api.dto.WXReceiveText;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -35,7 +35,7 @@ public class WXUtil {
 
     public static void main(String[] args) {
 
-        WXReceiveTextMessage textMessage = new WXReceiveTextMessage();
+        WXReceiveText textMessage = new WXReceiveText();
         textMessage.setContent("testtt");
         textMessage.setToUserName("touser");
         textMessage.setFromUserName("fromuser");

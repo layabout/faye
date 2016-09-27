@@ -1,7 +1,6 @@
 package com.ruby.wechat.web;
 
 import com.google.code.kaptcha.impl.DefaultKaptcha;
-import com.ruby.wechat.api.manager.WXAccessTokenManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,7 +26,7 @@ public class HomeController {
 
     @RequestMapping(value = {"/","/home","/index"}, method = RequestMethod.GET)
     public String home(Model model) {
-        model.addAttribute("wxtoken", WXAccessTokenManager.getAccessToken());
+//        model.addAttribute("wxtoken", WXAccessTokenManager.getAccessToken());
         return "index";
     }
 

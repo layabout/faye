@@ -3,9 +3,7 @@ package com.ruby.wechat.api;
 import com.google.common.base.Throwables;
 import com.ruby.wechat.Constants;
 import com.ruby.wechat.api.dto.RestApiError;
-import com.ruby.wechat.api.dto.WXReceiveTextMessage;
-import com.ruby.wechat.api.dto.WXReplyTextMessage;
-import com.ruby.wechat.api.service.WXReplyMessageService;
+import com.ruby.wechat.api.service.WXMessageService;
 import com.ruby.wechat.utils.AesException;
 import com.ruby.wechat.utils.SHA1;
 import com.ruby.wechat.utils.WXBizMsgCrypt;
@@ -28,33 +26,7 @@ public class WXServiceAPI {
     private static final Logger logger = LoggerFactory.getLogger(WXServiceAPI.class);
 
     @Autowired
-    private WXReplyMessageService wxReplyMessageService;
-
-
-    //文本消息
-    private static final String TEXT = "text";
-
-    //图片消息
-    private static final String IMAGE = "image";
-
-    //语音消息
-    private static final String VOICE = "voice";
-
-    //视频消息
-    private static final String VIDEO = "video";
-
-    //小视频消息
-    private static final String SHORT_VIDEO = "shortvideo";
-
-    //地理位置消息
-    private static final String LOCATION = "location";
-
-    //链接消息
-    private static final String LINK = "link";
-
-
-    //事件推送
-    private static final String EVENT = "event";
+    private WXMessageService wxMessageService;
 
     /**
      * 服务器地址验证
@@ -95,17 +67,17 @@ public class WXServiceAPI {
     }
 
     /**
-     * 微信公众号业务接口
+     * 微信公众号消息接收接口
      * @return
      */
     @RequestMapping(value = "/api", method = RequestMethod.POST)
-    public String service(@RequestBody String requestBody, @RequestParam(value = "timestamp") String timestamp,
+    public String receiver(@RequestBody String requestBody, @RequestParam(value = "timestamp") String timestamp,
                           @RequestParam(value = "nonce") String nonce, HttpServletRequest request) {
 
         String encryptType = request.getParameter("encrypt_type");
         if (StringUtils.isBlank(encryptType) || encryptType.equals("raw")) {
 
-            //明文模式暂不处理
+            // 明文模式暂不处理
             logger.trace("明文模式");
             return "success";
 
@@ -114,6 +86,7 @@ public class WXServiceAPI {
             logger.trace("密文模式");
 
             try {
+
                 logger.trace("原始密文: {}", requestBody);
 
                 String msg_signature = request.getParameter("msg_signature");
@@ -125,38 +98,40 @@ public class WXServiceAPI {
 
                 logger.trace("明文消息: {}", decryptXml);
 
-                //获取消息类型
-                String msgType = WXUtil.getTagValue(decryptXml, "MsgType");
-
-                if (msgType.equals(TEXT)) {
-
-                    logger.trace("接收文本消息");
-
-                    WXReceiveTextMessage message = WXUtil.convertToBean(decryptXml, WXReceiveTextMessage.class);
-
-                    if (message.getContent().contains("你好")) {
-
-                        WXReplyTextMessage reply = new WXReplyTextMessage();
-                        reply.setToUserName(message.getFromUserName());
-                        reply.setFromUserName(message.getToUserName());
-                        reply.setContent("您好!欢迎关注Mo宝!");
-
-                        return wxReplyMessageService.replyTextMessage(reply);
-                    }
-
-                } else if(msgType.equals(EVENT)) {
-
-                    logger.trace("接收事件推送");
-
-                }
+                //处理消息
+                return wxMessageService.processor(decryptXml);
 
             } catch (Exception e) {
                 logger.error("消息解密错误！");
-                return "failure";
             }
         }
         return "success";
     }
+
+    /**
+     * 模板消息通知接口
+     * @param requestBody 消息体
+     * @return
+     */
+    @RequestMapping(value = "/api/template/send", method = RequestMethod.POST)
+    public String sendTemplateMessage(@RequestBody String requestBody) throws Exception {
+
+//        String requestUrl = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + WXAccessTokenManager.getAccessToken();
+//
+//        CloseableHttpClient client = HttpClients.createDefault();
+//        HttpPost post = new HttpPost(requestUrl);
+//        CloseableHttpResponse response = null;
+
+        System.out.println(requestBody);
+
+//        response = client.execute(post);
+//        String bodyAsString = EntityUtils.toString(response.getEntity());
+
+
+        return null;
+    }
+
+
 
     /**
      * Restful API 统一异常处理
@@ -170,7 +145,7 @@ public class WXServiceAPI {
         RestApiError<String> err = new RestApiError<String>();
         err.setMessage(exception.getMessage());
         err.setCode(err.ERROR);
-        err.setData("test data");
+        err.setData("error");
         err.setUrl(request.getRequestURL().toString());
 
         Throwable rootCause = Throwables.getRootCause(exception);
