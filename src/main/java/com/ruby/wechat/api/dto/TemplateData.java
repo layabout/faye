@@ -2,7 +2,6 @@ package com.ruby.wechat.api.dto;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
 
 /**
  * Created by ruby on 2016/9/27.
@@ -11,21 +10,21 @@ import javax.xml.bind.annotation.XmlElement;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TemplateData {
 
-    @XmlElement
-    private String name;
+    private String mark;
 
-    @XmlElement
     private String value;
+
+    private String color;
 
     public TemplateData() {
     }
 
-    public String getName() {
-        return name;
+    public String getMark() {
+        return mark;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setMark(String mark) {
+        this.mark = mark;
     }
 
     public String getValue() {
@@ -36,5 +35,11 @@ public class TemplateData {
         this.value = value;
     }
 
+    public String getColor() {
+        return color;
+    }
 
+    public void setColor(String color) {
+        this.color = color;
+    }
 }

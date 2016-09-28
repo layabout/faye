@@ -1,6 +1,5 @@
 package com.ruby.wechat.api.dto;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,6 +13,8 @@ public class WXTemplateMessage {
     private String template_id;
 
     private String url;
+
+    private String topcolor;
 
     private Map<String, WXTemplateData> data;
 
@@ -50,5 +51,13 @@ public class WXTemplateMessage {
 
     public void setData(Map<String, WXTemplateData> data) {
         this.data = data;
+    }
+
+    public String getTopcolor() {
+        return topcolor;
+    }
+
+    public void setTopcolor(String topcolor) {
+        this.topcolor = topcolor;
     }
 }

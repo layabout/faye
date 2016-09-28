@@ -11,14 +11,13 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TemplateMessage {
 
-    @XmlElement
     private String touser;
 
-    @XmlElement
-    private String msgtype;
+    private String template;
+
+    private String topcolor;
 
     @XmlElementWrapper(name="data")
-    @XmlElement
     private List<TemplateData> item;
 
     public TemplateMessage() {
@@ -32,12 +31,12 @@ public class TemplateMessage {
         this.touser = touser;
     }
 
-    public String getMsgtype() {
-        return msgtype;
+    public String getTemplate() {
+        return template;
     }
 
-    public void setMsgtype(String msgtype) {
-        this.msgtype = msgtype;
+    public void setTemplate(String template) {
+        this.template = template;
     }
 
     public List<TemplateData> getItems() {
@@ -46,5 +45,13 @@ public class TemplateMessage {
 
     public void setItems(List<TemplateData> item) {
         this.item = item;
+    }
+
+    public String getTopcolor() {
+        return topcolor;
+    }
+
+    public void setTopcolor(String topcolor) {
+        this.topcolor = topcolor;
     }
 }

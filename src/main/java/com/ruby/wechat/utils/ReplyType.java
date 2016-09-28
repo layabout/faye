@@ -20,7 +20,7 @@ public enum ReplyType {
 
     public static String getDesc(String type) {
         for (ReplyType c : ReplyType .values()) {
-            if (c.getType() == type) {
+            if (c.getType().equals(type)) {
                 return c.desc;
             }
         }

@@ -1,20 +1,31 @@
 package com.ruby.wechat.api;
 
+import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
+import com.ruby.common.exception.ParamsException;
 import com.ruby.wechat.Constants;
-import com.ruby.wechat.api.dto.RestApiError;
+import com.ruby.wechat.api.dto.*;
+import com.ruby.wechat.api.manager.WXAccessTokenManager;
 import com.ruby.wechat.api.service.WXMessageService;
-import com.ruby.wechat.utils.AesException;
-import com.ruby.wechat.utils.SHA1;
-import com.ruby.wechat.utils.WXBizMsgCrypt;
-import com.ruby.wechat.utils.WXUtil;
+import com.ruby.wechat.utils.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by ruby on 2016/8/5.
@@ -110,28 +121,121 @@ public class WXServiceAPI {
 
     /**
      * 模板消息通知接口
-     * @param requestBody 消息体
+     * @param message 消息体
+     * 请求报文example
+     * <xml>
+     *      <touser>tracy</touser>
+     *      <template>tmp001</template>
+     *      <data>
+     *          <item>
+     *              <mark>first</mark>
+     *              <value>支付成功</value>
+     *          </item>
+     *          <item>
+     *              <mark>remark</mark>
+     *              <value>欢迎再次购买!</value>
+     *          </item>
+     *      </data>
+     * </xml>
      * @return
      */
     @RequestMapping(value = "/api/template/send", method = RequestMethod.POST)
-    public String sendTemplateMessage(@RequestBody String requestBody) throws Exception {
+    public String sendTemplateMessage(@RequestBody TemplateMessage message) throws Exception{
 
-//        String requestUrl = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + WXAccessTokenManager.getAccessToken();
-//
-//        CloseableHttpClient client = HttpClients.createDefault();
-//        HttpPost post = new HttpPost(requestUrl);
-//        CloseableHttpResponse response = null;
+        //数据检验
+        //龊逼方案,比较理想的是jaxb结合schema完成校验
 
-        System.out.println(requestBody);
+        ErrorType errorType = null;
 
-//        response = client.execute(post);
-//        String bodyAsString = EntityUtils.toString(response.getEntity());
+        if (StringUtils.isBlank(message.getTouser())) {
+            errorType = ErrorType.missing_param_touser;
+        }
+
+        if (StringUtils.isBlank(message.getTemplate())) {
+            errorType = ErrorType.missing_param_template;
+        } else {
+            if (NotificationType.getTemplate(message.getTemplate()) == null)
+                errorType = ErrorType.bad_param_template;
+        }
+
+        List<TemplateData> dataList = message.getItems();
+        if (dataList == null || dataList.size() == 0) {
+            errorType = ErrorType.missing_param_data;
+        } else {
+            for(TemplateData item : dataList) {
+                if (StringUtils.isBlank(item.getMark()))
+                    errorType = ErrorType.missing_param_mark;
+                if (StringUtils.isBlank(item.getValue()))
+                    errorType = ErrorType.missing_param_value;
+            }
+        }
+
+        if (errorType != null)
+            throw new ParamsException(errorType.getMessage(), errorType.getCode());
+
+        //判断通知类型
+        //TM001 - 交易通知
+        //TM002 - 提现通知
+        //TM003 - 转账通知
+        String template = message.getTemplate();
+        NotificationType notificationType = NotificationType.getNotificationType(template);
+        logger.trace(notificationType.getDesc());
+
+        //组装json报文
+        WXTemplateMessage wxTemplateMessage = new WXTemplateMessage();
+        wxTemplateMessage.setTouser(message.getTouser());
+        wxTemplateMessage.setTemplate_id(notificationType.getTemplate_id());
+        wxTemplateMessage.setUrl(notificationType.getUrl());
+
+        //若无指定topcolor值，则使用默认值
+        if (StringUtils.isNotBlank(message.getTopcolor()))
+            wxTemplateMessage.setTopcolor(message.getTopcolor());
+        else
+            wxTemplateMessage.setTopcolor(notificationType.getTopcolor());
+
+        List<TemplateData> list = message.getItems();
+
+        Map<String, WXTemplateData> map = new HashMap<String, WXTemplateData>();
+
+        for(TemplateData item : list) {
+            WXTemplateData data = new WXTemplateData();
+            data.setValue(item.getValue());
+            //没有指定的字体颜色，则使用默认值
+            if (StringUtils.isNotBlank(item.getColor()))
+                data.setColor(item.getColor());
+            else
+                data.setColor("#173177");
+
+            map.put(item.getMark(), data);
+        }
+
+        wxTemplateMessage.setData(map);
 
 
-        return null;
+        //调用微信服务器接口，发送模板通知消息
+        String requestUrl = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + WXAccessTokenManager.getAccessToken();
+
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpPost post = new HttpPost(requestUrl);
+        CloseableHttpResponse response = null;
+
+        String json = JSON.toJSONString(wxTemplateMessage);
+        logger.trace("请求json数据: {}", json);
+        StringEntity entity = new StringEntity(json, "UTF-8");
+        post.setEntity(entity);
+
+        try {
+            response = client.execute(post);
+            String bodyAsString = EntityUtils.toString(response.getEntity());
+            logger.trace("微信服务器返回结果: {}", bodyAsString);
+
+            return bodyAsString;
+
+        } catch (IOException e) {
+            throw new Exception("微信接口调用失败");
+        }
+
     }
-
-
 
     /**
      * Restful API 统一异常处理
@@ -140,19 +244,45 @@ public class WXServiceAPI {
      * @return
      */
     @ExceptionHandler(Exception.class)
-    public RestApiError<String> ExceptionHandler(HttpServletRequest request, Exception exception) {
+    public ApiRespData<String> ExceptionHandler(HttpServletRequest request, Exception exception) {
 
-        RestApiError<String> err = new RestApiError<String>();
-        err.setMessage(exception.getMessage());
-        err.setCode(err.ERROR);
-        err.setData("error");
-        err.setUrl(request.getRequestURL().toString());
+        ApiRespData<String> error = new ApiRespData<String>();
+        error.setMessage("系统异常！");
+        error.setCode(error.ERROR);
+        error.setData("error");
+        error.setUrl(request.getRequestURL().toString());
 
         Throwable rootCause = Throwables.getRootCause(exception);
 
         logger.error(rootCause.toString(), exception);
 
-        return err;
+        return error;
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ApiRespData<String> httpMessageNotReadableExceptionHandler(Exception exception) {
+        ApiRespData<String> error = new ApiRespData<String>();
+        error.setMessage("请求报文缺失！");
+        error.setCode(error.MESSAGE_MISSING);
+
+        Throwable rootCause = Throwables.getRootCause(exception);
+
+        logger.error(rootCause.toString(), exception);
+
+        return error;
+    }
+
+    @ExceptionHandler(ParamsException.class)
+    public ApiRespData<String> paramExceptionHandler(ParamsException exception) {
+        ApiRespData<String> error = new ApiRespData<String>();
+        error.setMessage(exception.getMessage());
+        error.setCode(exception.getErrorCode());
+
+        Throwable rootCause = Throwables.getRootCause(exception);
+
+        logger.error(rootCause.toString(), exception);
+
+        return error;
     }
 
 }
