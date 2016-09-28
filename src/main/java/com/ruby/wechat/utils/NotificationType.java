@@ -7,7 +7,7 @@ package com.ruby.wechat.utils;
  */
 public enum NotificationType {
 
-    TM001("交易通知", "TM001", "A2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "url1", null),
+    TM001("交易通知", "TM001", "J2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "www.qq.com", "#FF0000"),
     TM002("提现通知", "TM002", "B2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "url2", "#FF0000"),
     TM003("转账通知", "TM003", "C2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "url3", null);
 
