@@ -2,7 +2,7 @@ package com.ruby.wechat.api;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
-import com.ruby.common.exception.ParamsException;
+import com.ruby.common.exception.BusinessException;
 import com.ruby.wechat.Constants;
 import com.ruby.wechat.api.dto.*;
 import com.ruby.wechat.api.manager.WXAccessTokenManager;
@@ -104,7 +104,7 @@ public class WXServiceAPI {
 
                 logger.trace("接收参数[msg_signature={}, timestamp={}, nonce={}]", msg_signature, timestamp, nonce);
 
-                WXBizMsgCrypt msgCrypt = WXUtil.getWxBizMsgCryptInstance();
+                WXBizMsgCrypt msgCrypt = WXUtils.getWxBizMsgCryptInstance();
                 String decryptXml = msgCrypt.decryptMsg(msg_signature, timestamp, nonce, requestBody);
 
                 logger.trace("明文消息: {}", decryptXml);
@@ -122,6 +122,7 @@ public class WXServiceAPI {
     /**
      * 模板消息通知接口
      * @param message 消息体
+     * @param request
      * 请求报文example
      * <xml>
      *      <touser>tracy</touser>
@@ -140,11 +141,10 @@ public class WXServiceAPI {
      * @return
      */
     @RequestMapping(value = "/api/template/send", method = RequestMethod.POST)
-    public String sendTemplateMessage(@RequestBody TemplateMessage message) throws Exception{
+    public String sendTemplateMessage(@RequestBody TemplateMessage message, HttpServletRequest request) throws Exception{
 
         //数据检验
         //龊逼方案,比较理想的是jaxb结合schema完成校验
-
         ErrorType errorType = null;
 
         if (StringUtils.isBlank(message.getTouser())) {
@@ -171,7 +171,7 @@ public class WXServiceAPI {
         }
 
         if (errorType != null)
-            throw new ParamsException(errorType.getMessage(), errorType.getCode());
+            throw new BusinessException(errorType.getMessage(), errorType.getCode());
 
         //判断通知类型
         //TM001 - 交易通知
@@ -186,12 +186,6 @@ public class WXServiceAPI {
         wxTemplateMessage.setTouser(message.getTouser());
         wxTemplateMessage.setTemplate_id(notificationType.getTemplate_id());
         wxTemplateMessage.setUrl(notificationType.getUrl());
-
-        //若无指定topcolor值，则使用默认值
-        if (StringUtils.isNotBlank(message.getTopcolor()))
-            wxTemplateMessage.setTopcolor(message.getTopcolor());
-        else
-            wxTemplateMessage.setTopcolor(notificationType.getTopcolor());
 
         List<TemplateData> list = message.getItems();
 
@@ -210,7 +204,7 @@ public class WXServiceAPI {
         }
 
         wxTemplateMessage.setData(map);
-
+        //消息组装完毕
 
         //调用微信服务器接口，发送模板通知消息
         String requestUrl = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + WXAccessTokenManager.getAccessToken();
@@ -238,6 +232,25 @@ public class WXServiceAPI {
     }
 
     /**
+     * 商户绑定接口
+     * @return
+     */
+    @RequestMapping(value = "/api/wx/user/bind", method = RequestMethod.POST)
+    public String userBind() {
+        return null;
+    }
+
+    /**
+     * 商户解绑接口
+     * @return
+     */
+    @RequestMapping(value = "/api/wx/user/unbind/{openId}", method = RequestMethod.GET)
+    public String userUnbind(@PathVariable String openId) {
+        System.out.println(openId);
+        return null;
+    }
+
+    /**
      * Restful API 统一异常处理
      * @param request
      * @param exception
@@ -247,7 +260,7 @@ public class WXServiceAPI {
     public ApiRespData<String> ExceptionHandler(HttpServletRequest request, Exception exception) {
 
         ApiRespData<String> error = new ApiRespData<String>();
-        error.setMessage("系统异常！");
+        error.setMessage("请求异常！");
         error.setCode(error.ERROR);
         error.setData("error");
         error.setUrl(request.getRequestURL().toString());
@@ -272,8 +285,8 @@ public class WXServiceAPI {
         return error;
     }
 
-    @ExceptionHandler(ParamsException.class)
-    public ApiRespData<String> paramExceptionHandler(ParamsException exception) {
+    @ExceptionHandler(BusinessException.class)
+    public ApiRespData<String> businessExceptionHandler(BusinessException exception) {
         ApiRespData<String> error = new ApiRespData<String>();
         error.setMessage(exception.getMessage());
         error.setCode(exception.getErrorCode());

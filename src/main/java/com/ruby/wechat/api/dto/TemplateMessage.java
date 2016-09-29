@@ -15,8 +15,6 @@ public class TemplateMessage {
 
     private String template;
 
-    private String topcolor;
-
     @XmlElementWrapper(name="data")
     private List<TemplateData> item;
 
@@ -47,11 +45,4 @@ public class TemplateMessage {
         this.item = item;
     }
 
-    public String getTopcolor() {
-        return topcolor;
-    }
-
-    public void setTopcolor(String topcolor) {
-        this.topcolor = topcolor;
-    }
 }

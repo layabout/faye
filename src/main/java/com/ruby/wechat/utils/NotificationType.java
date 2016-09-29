@@ -7,9 +7,9 @@ package com.ruby.wechat.utils;
  */
 public enum NotificationType {
 
-    TM001("交易通知", "TM001", "J2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "www.qq.com", "#FF0000"),
-    TM002("提现通知", "TM002", "B2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "url2", "#FF0000"),
-    TM003("转账通知", "TM003", "C2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "url3", null);
+    TM001("交易通知", "TM001", "J2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "www.qq.com"),
+    TM002("提现通知", "TM002", "B2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "url2"),
+    TM003("转账通知", "TM003", "C2bFVeK0iUHeXZ7FtoOIcBdWXf95LwT_oKTmL-b9AH0", "url3");
 
     private String desc;
 
@@ -21,12 +21,11 @@ public enum NotificationType {
 
     private String topcolor;
 
-    NotificationType(String desc, String template, String template_id, String url, String topcolor) {
+    NotificationType(String desc, String template, String template_id, String url) {
         this.desc = desc;
         this.template = template;
         this.template_id = template_id;
         this.url = url;
-        this.topcolor = topcolor;
     }
 
     public static String getTemplate(String template) {
@@ -53,14 +52,6 @@ public enum NotificationType {
 
     public void setUrl(String url) {
         this.url = url;
-    }
-
-    public String getTopcolor() {
-        return topcolor;
-    }
-
-    public void setTopcolor(String topcolor) {
-        this.topcolor = topcolor;
     }
 
     public String getDesc() {
@@ -90,9 +81,5 @@ public enum NotificationType {
     @Override
     public String toString() {
         return this.template;
-    }
-
-    public static void main (String[] args) {
-        System.out.println(NotificationType.getTemplate("TM003") == null);
     }
 }

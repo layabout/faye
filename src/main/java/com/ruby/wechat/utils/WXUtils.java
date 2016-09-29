@@ -29,7 +29,7 @@ import java.util.Random;
  * Created by ruby on 2016/9/21.
  * Email:liyufeng_23@163.com
  */
-public class WXUtil {
+public class WXUtils {
 
     private static WXBizMsgCrypt wxBizMsgCrypt = null;
 
@@ -42,7 +42,7 @@ public class WXUtil {
         textMessage.setMsgType("text");
 
         try {
-            System.out.println(WXUtil.convertToXml(textMessage));
+            System.out.println(WXUtils.convertToXml(textMessage));
         } catch (Exception e) {
             e.printStackTrace();
         }

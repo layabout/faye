@@ -20,4 +20,7 @@ public class Constants extends ConfigurableConstants{
     //aesKey
     public final static String WX_ENCODING_AESKEY = p.getProperty("wx_encodingAesKey");
 
+    //微信接口调用白名单
+    public final static String WX_API_ALLOWED_IP = p.getProperty("wx_api_allowed_ip");
+
 }

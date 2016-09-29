@@ -2,10 +2,11 @@ package com.ruby.wechat.api.service.impl;
 
 import com.ruby.wechat.api.dto.WXReceiveText;
 import com.ruby.wechat.api.dto.WXSubscribeEvent;
+import com.ruby.wechat.api.dto.WXTemplateSendJobFinishEvent;
 import com.ruby.wechat.api.service.WXMessageService;
 import com.ruby.wechat.utils.ReceiveType;
 import com.ruby.wechat.utils.WXBizMsgCrypt;
-import com.ruby.wechat.utils.WXUtil;
+import com.ruby.wechat.utils.WXUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,8 +42,8 @@ public class WXMessageServiceImpl implements WXMessageService {
         if (DECRYPT_TYPE.equals("aes")) {
 
             //生成随机数
-            String nonce = WXUtil.getRandomNum(9);
-            WXBizMsgCrypt msgCrypt = WXUtil.getWxBizMsgCryptInstance();
+            String nonce = WXUtils.getRandomNum(9);
+            WXBizMsgCrypt msgCrypt = WXUtils.getWxBizMsgCryptInstance();
             replyXml = msgCrypt.encryptMsg(replyXml, timestamp, nonce);
 
         }
@@ -56,22 +57,30 @@ public class WXMessageServiceImpl implements WXMessageService {
     public String processor(String receiveXml) throws Exception {
 
         // 获取消息类型
-        String msgType = WXUtil.getTagValue(receiveXml, "MsgType");
+        String msgType = WXUtils.getTagValue(receiveXml, "MsgType");
 
         // 设置消息接发方
-        TO_USER_NAME = WXUtil.getTagValue(receiveXml, "FromUserName");
+        TO_USER_NAME = WXUtils.getTagValue(receiveXml, "FromUserName");
 
-        FROM_USER_NAME = WXUtil.getTagValue(receiveXml, "ToUserName");
+        FROM_USER_NAME = WXUtils.getTagValue(receiveXml, "ToUserName");
 
         if (msgType.equals(ReceiveType.TEXT.toString())) {
 
             logger.trace("接收文本消息");
 
-            WXReceiveText message = WXUtil.convertToBean(receiveXml, WXReceiveText.class);
+            WXReceiveText message = WXUtils.convertToBean(receiveXml, WXReceiveText.class);
 
             String  content = "";
 
-            if (message.getContent().contains("你好")) content = "您好！";
+            if (message.getContent().contains("你好"))
+                content = "您好！";
+            else {
+                content = "您好！您可以通过以下方式同我们联系：\n" +
+                        "【1】登录我们的官方网站：www.mobaopay.com\n" +
+                        "【2】选择拨打客服热线：4006771357\n" +
+                        "【3】选择登录在线客服：（QQ）4006771357";
+            }
+
 
             return replyTextMessage(content);
 
@@ -80,21 +89,27 @@ public class WXMessageServiceImpl implements WXMessageService {
             logger.trace("接收事件推送");
 
             // 获取事件类型
-            String event = WXUtil.getTagValue(receiveXml, "Event");
+            String event = WXUtils.getTagValue(receiveXml, "Event");
             // 订阅、取消订阅事件
             if (event.equals(WXSubscribeEvent.SUBSCRIBE) || event.equals(WXSubscribeEvent.UNSUBSCRIBE)) {
 
-                WXSubscribeEvent subscribeEvent = WXUtil.convertToBean(receiveXml, WXSubscribeEvent.class);
+                WXSubscribeEvent subscribeEvent = WXUtils.convertToBean(receiveXml, WXSubscribeEvent.class);
 
                 // 订阅事件
                 if (subscribeEvent.getEvent().equals(WXSubscribeEvent.SUBSCRIBE)) {
 
                     logger.trace("订阅事件");
-                    String  content = "您好！欢迎关注Mo宝支付！客服热线400-677-1357";
+                    String content = "Mo宝支付（www.mobaopay.com）感谢您的关注！\n" +
+                            "商务合作、疑问咨询请拨打客服热线：4006771357,或登录在线客服：（QQ）4006771357，我们将为您提供最为专业的第三方支付服务！";
 
                     return replyTextMessage(content);
 
                 }
+            // 模板消息发送任务完成事件
+            } else if (event.equals(WXTemplateSendJobFinishEvent.TEMPLATE_SEND_JOB_FINISH)) {
+                logger.trace("模板消息推送完成");
+                WXTemplateSendJobFinishEvent sendJobFinishEvent = WXUtils.convertToBean(receiveXml, WXTemplateSendJobFinishEvent.class);
+                logger.trace("消息{}, 推送状态: {}", sendJobFinishEvent.getMsgId(), sendJobFinishEvent.getStatus());
             }
 
         }
