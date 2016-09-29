@@ -260,7 +260,7 @@ public class WXServiceAPI {
     public ApiRespData<String> ExceptionHandler(HttpServletRequest request, Exception exception) {
 
         ApiRespData<String> error = new ApiRespData<String>();
-        error.setMessage("请求异常！");
+        error.setMessage("请求发生异常！");
         error.setCode(error.ERROR);
         error.setData("error");
         error.setUrl(request.getRequestURL().toString());
