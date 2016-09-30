@@ -13,7 +13,13 @@ public enum  ErrorType {
     missing_param_data("缺少data参数", "40102"),
     missing_param_mark("缺少mark参数", "40103"),
     missing_param_value("缺少value参数", "40104"),
-    bad_param_template("template参数值错误", "40200");
+    missing_param_loginId("登录账号不能为空", "40105"),
+    missing_param_openId("缺少openId参数", "40106"),
+    missing_param_sendId("缺少sendId参数", "40107"),
+    missing_param_activeCode("短信验证码不能为空", "40108"),
+
+    bad_param_template("template参数值错误", "40200"),
+    bad_param_loginId("登录账号格式错误", "40201");
 
     private String message;
     private String code;

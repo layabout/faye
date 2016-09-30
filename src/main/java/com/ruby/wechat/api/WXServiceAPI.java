@@ -1,20 +1,15 @@
 package com.ruby.wechat.api;
 
-import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
 import com.ruby.common.exception.BusinessException;
 import com.ruby.wechat.Constants;
-import com.ruby.wechat.api.dto.*;
-import com.ruby.wechat.api.manager.WXAccessTokenManager;
+import com.ruby.wechat.api.dto.ApiRespData;
+import com.ruby.wechat.api.dto.TemplateData;
+import com.ruby.wechat.api.dto.TemplateMessage;
+import com.ruby.wechat.api.service.MerchantBindService;
 import com.ruby.wechat.api.service.WXMessageService;
 import com.ruby.wechat.utils.*;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +17,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Created by ruby on 2016/8/5.
@@ -38,6 +32,9 @@ public class WXServiceAPI {
 
     @Autowired
     private WXMessageService wxMessageService;
+
+    @Autowired
+    private MerchantBindService merchantBindService;
 
     /**
      * 服务器地址验证
@@ -141,93 +138,42 @@ public class WXServiceAPI {
      * @return
      */
     @RequestMapping(value = "/api/template/send", method = RequestMethod.POST)
-    public String sendTemplateMessage(@RequestBody TemplateMessage message, HttpServletRequest request) throws Exception{
+    public String sendTemplateMsg(@RequestBody TemplateMessage message, HttpServletRequest request) throws Exception{
 
         //数据检验
         //龊逼方案,比较理想的是jaxb结合schema完成校验
-        ErrorType errorType = null;
+        List<ErrorType> errors = new ArrayList<ErrorType>();
 
         if (StringUtils.isBlank(message.getTouser())) {
-            errorType = ErrorType.missing_param_touser;
+            errors.add(ErrorType.missing_param_touser);
         }
 
         if (StringUtils.isBlank(message.getTemplate())) {
-            errorType = ErrorType.missing_param_template;
+            errors.add(ErrorType.missing_param_template);
         } else {
             if (NotificationType.getTemplate(message.getTemplate()) == null)
-                errorType = ErrorType.bad_param_template;
+                errors.add(ErrorType.bad_param_template);
         }
 
         List<TemplateData> dataList = message.getItems();
         if (dataList == null || dataList.size() == 0) {
-            errorType = ErrorType.missing_param_data;
+            errors.add(ErrorType.missing_param_data);
         } else {
             for(TemplateData item : dataList) {
                 if (StringUtils.isBlank(item.getMark()))
-                    errorType = ErrorType.missing_param_mark;
+                    errors.add(ErrorType.missing_param_mark);
                 if (StringUtils.isBlank(item.getValue()))
-                    errorType = ErrorType.missing_param_value;
+                    errors.add(ErrorType.missing_param_value);
             }
         }
 
-        if (errorType != null)
+        if (errors.size() != 0) {
+            ErrorType errorType = errors.get(0);
             throw new BusinessException(errorType.getMessage(), errorType.getCode());
-
-        //判断通知类型
-        //TM001 - 交易通知
-        //TM002 - 提现通知
-        //TM003 - 转账通知
-        String template = message.getTemplate();
-        NotificationType notificationType = NotificationType.getNotificationType(template);
-        logger.trace(notificationType.getDesc());
-
-        //组装json报文
-        WXTemplateMessage wxTemplateMessage = new WXTemplateMessage();
-        wxTemplateMessage.setTouser(message.getTouser());
-        wxTemplateMessage.setTemplate_id(notificationType.getTemplate_id());
-        wxTemplateMessage.setUrl(notificationType.getUrl());
-
-        List<TemplateData> list = message.getItems();
-
-        Map<String, WXTemplateData> map = new HashMap<String, WXTemplateData>();
-
-        for(TemplateData item : list) {
-            WXTemplateData data = new WXTemplateData();
-            data.setValue(item.getValue());
-            //没有指定的字体颜色，则使用默认值
-            if (StringUtils.isNotBlank(item.getColor()))
-                data.setColor(item.getColor());
-            else
-                data.setColor("#173177");
-
-            map.put(item.getMark(), data);
         }
 
-        wxTemplateMessage.setData(map);
-        //消息组装完毕
-
-        //调用微信服务器接口，发送模板通知消息
-        String requestUrl = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + WXAccessTokenManager.getAccessToken();
-
-        CloseableHttpClient client = HttpClients.createDefault();
-        HttpPost post = new HttpPost(requestUrl);
-        CloseableHttpResponse response = null;
-
-        String json = JSON.toJSONString(wxTemplateMessage);
-        logger.trace("请求json数据: {}", json);
-        StringEntity entity = new StringEntity(json, "UTF-8");
-        post.setEntity(entity);
-
-        try {
-            response = client.execute(post);
-            String bodyAsString = EntityUtils.toString(response.getEntity());
-            logger.trace("微信服务器返回结果: {}", bodyAsString);
-
-            return bodyAsString;
-
-        } catch (IOException e) {
-            throw new Exception("微信接口调用失败");
-        }
+        //调用模板通知发送服务
+        return wxMessageService.sendTemplateMessage(message);
 
     }
 
@@ -236,8 +182,42 @@ public class WXServiceAPI {
      * @return
      */
     @RequestMapping(value = "/api/wx/user/bind", method = RequestMethod.POST)
-    public String userBind() {
-        return null;
+    public ApiRespData<String> userBind(HttpServletRequest request) throws Exception{
+
+        //数据校验
+        List<ErrorType> errors = new ArrayList<ErrorType>();
+
+        String loginId = request.getParameter("loginId");
+        if (StringUtils.isBlank(loginId)) {
+            errors.add(ErrorType.missing_param_loginId);
+        } else {
+            if (!Pattern.matches("^[a-zA-Z0-9_\\-@\\.]{6,30}$", loginId)) {
+                errors.add(ErrorType.bad_param_loginId);
+            }
+        }
+
+        String openId = request.getParameter("openId");
+        if (StringUtils.isBlank(openId)) {
+            errors.add(ErrorType.missing_param_openId);
+        }
+
+        String activeCode = request.getParameter("activeCode");
+        if (StringUtils.isBlank(activeCode)) {
+            errors.add(ErrorType.missing_param_activeCode);
+        }
+
+        String sendId = request.getParameter("sendId");
+        if (StringUtils.isBlank(sendId)) {
+            errors.add(ErrorType.missing_param_sendId);
+        }
+
+        if (errors.size() != 0) {
+            ErrorType errorType = errors.get(0);
+            throw new BusinessException(errorType.getMessage(), errorType.getCode());
+        }
+
+        //调用用户绑定服务
+        return merchantBindService.userBind(loginId, openId, sendId, activeCode);
     }
 
     /**
@@ -245,7 +225,7 @@ public class WXServiceAPI {
      * @return
      */
     @RequestMapping(value = "/api/wx/user/unbind/{openId}", method = RequestMethod.GET)
-    public String userUnbind(@PathVariable String openId) {
+    public ApiRespData<String> userUnbind(@PathVariable String openId) {
         System.out.println(openId);
         return null;
     }

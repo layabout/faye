@@ -24,7 +24,7 @@ public class SecurityAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityAspect.class);
 
-    @Pointcut("execution(* com.ruby.wechat.api.WXServiceAPI.sendTemplateMessage(..))")
+    @Pointcut("execution(* com.ruby.wechat.api.WXServiceAPI.sendTemplateMsg(..))")
     public void securityAspect() {
     }
 
@@ -42,10 +42,9 @@ public class SecurityAspect {
             }
         }
 
-        String req_ip = IpUtils.getIpAddr(request);
-        logger.trace("请求IP地址: {}", req_ip);
+        logger.trace("请求IP地址: {}", request.getRemoteAddr());
 
-        if (!IpUtils.isIpAllowed(req_ip, Constants.WX_API_ALLOWED_IP))
+        if (!IpUtils.isIpAllowed(request, Constants.WX_API_ALLOWED_IP))
             throw new BusinessException("IP禁止访问！", "403");
     }
 }

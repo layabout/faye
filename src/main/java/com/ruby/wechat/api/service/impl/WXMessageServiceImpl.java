@@ -1,15 +1,28 @@
 package com.ruby.wechat.api.service.impl;
 
-import com.ruby.wechat.api.dto.WXReceiveText;
-import com.ruby.wechat.api.dto.WXSubscribeEvent;
-import com.ruby.wechat.api.dto.WXTemplateSendJobFinishEvent;
+import com.alibaba.fastjson.JSON;
+import com.ruby.wechat.api.dto.*;
+import com.ruby.wechat.api.manager.WXAccessTokenManager;
 import com.ruby.wechat.api.service.WXMessageService;
+import com.ruby.wechat.utils.NotificationType;
 import com.ruby.wechat.utils.ReceiveType;
 import com.ruby.wechat.utils.WXBizMsgCrypt;
 import com.ruby.wechat.utils.WXUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by ruby on 2016/9/26.
@@ -51,6 +64,66 @@ public class WXMessageServiceImpl implements WXMessageService {
         logger.trace("回复消息: {}", replyXml);
 
         return replyXml;
+    }
+
+    @Override
+    public String sendTemplateMessage(TemplateMessage message) throws Exception {
+
+        //判断通知类型
+        //TM001 - 交易通知
+        //TM002 - 提现通知
+        //TM003 - 转账通知
+        String template = message.getTemplate();
+        NotificationType notificationType = NotificationType.getNotificationType(template);
+        logger.trace(notificationType.getDesc());
+
+        //组装json报文
+        WXTemplateMessage wxTemplateMessage = new WXTemplateMessage();
+        wxTemplateMessage.setTouser(message.getTouser());
+        wxTemplateMessage.setTemplate_id(notificationType.getTemplate_id());
+        wxTemplateMessage.setUrl(notificationType.getUrl());
+
+        List<TemplateData> list = message.getItems();
+
+        Map<String, WXTemplateData> map = new HashMap<String, WXTemplateData>();
+
+        for(TemplateData item : list) {
+            WXTemplateData data = new WXTemplateData();
+            data.setValue(item.getValue());
+            //没有指定的字体颜色，则使用默认值
+            if (StringUtils.isNotBlank(item.getColor()))
+                data.setColor(item.getColor());
+            else
+                data.setColor("#173177");
+
+            map.put(item.getMark(), data);
+        }
+
+        wxTemplateMessage.setData(map);
+        //消息组装完毕
+
+        //调用微信服务器接口，发送模板通知消息
+        String requestUrl = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=" + WXAccessTokenManager.getAccessToken();
+
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpPost post = new HttpPost(requestUrl);
+        CloseableHttpResponse response = null;
+
+        String json = JSON.toJSONString(wxTemplateMessage);
+        logger.trace("请求json数据: {}", json);
+        StringEntity entity = new StringEntity(json, "UTF-8");
+        post.setEntity(entity);
+
+        try {
+            response = client.execute(post);
+            String bodyAsString = EntityUtils.toString(response.getEntity());
+            logger.trace("微信服务器返回结果: {}", bodyAsString);
+
+            return bodyAsString;
+
+        } catch (IOException e) {
+            throw new Exception("微信接口调用失败");
+        }
     }
 
     @Override
@@ -111,6 +184,7 @@ public class WXMessageServiceImpl implements WXMessageService {
                 WXTemplateSendJobFinishEvent sendJobFinishEvent = WXUtils.convertToBean(receiveXml, WXTemplateSendJobFinishEvent.class);
                 logger.trace("消息{}, 推送状态: {}", sendJobFinishEvent.getMsgId(), sendJobFinishEvent.getStatus());
             }
+            return "success";
 
         }
         return "success";

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<moboAccount messageType="32000044"><!--/*  微信通知绑定  */-->
+    <reqData>
+        <loginId th:text="${loginId}"></loginId>
+        <openID th:text="${openID}"></openID>
+        <sendID th:text="${sendID}"></sendID>
+        <activeCode th:text="${activeCode}"></activeCode>
+    </reqData>
+</moboAccount>
