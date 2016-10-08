@@ -2,11 +2,6 @@ package com.ruby.wechat.utils;
 
 import com.ruby.wechat.Constants;
 import com.ruby.wechat.api.dto.WXReceiveText;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -19,7 +14,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Random;
@@ -128,38 +122,6 @@ public class WXUtils {
         result = writer.toString();
 
         return result;
-    }
-
-    /**
-     * 验证请求IP是否来自微信服务器
-     */
-    public static boolean validateWeChatIP(String requestIP, String wechatIPList) {
-        if(wechatIPList.contains(requestIP))
-            return true;
-        else
-            return false;
-    }
-
-    /**
-     * 获取微信服务器IP
-     */
-    public static void getWeChatServerIPList(String accessToken) {
-        CloseableHttpClient client = HttpClients.createDefault();
-
-        String requestUrl = "https://api.weixin.qq.com/cgi-bin/getcallbackip?access_token=" + accessToken;
-        HttpGet get = new HttpGet(requestUrl);
-
-        try {
-
-            CloseableHttpResponse response = client.execute(get);
-            String bodyAsString = EntityUtils.toString(response.getEntity());
-
-            System.out.println(bodyAsString);
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     /**
