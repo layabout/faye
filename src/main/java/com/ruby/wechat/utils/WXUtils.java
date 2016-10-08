@@ -91,6 +91,7 @@ public class WXUtils {
      * @return
      * @throws Exception
      */
+    @SuppressWarnings("unchecked")
     public static <T> T convertToBean(String xmltext, Class<T> clazz) throws Exception {
         JAXBContext context = JAXBContext.newInstance(clazz);
         Unmarshaller un = context.createUnmarshaller();
